@@ -47,12 +47,19 @@ export const MySqlConfigSchema = {
           type: 'string',
         },
         migrationsScript: {
+          anyOf: [
+            {
+              items: {
+                type: 'string',
+              },
+              type: 'array',
+            },
+            {
+              type: 'string',
+            },
+          ],
           description:
             'Optional script to run after the database\nhas been started but before running tests',
-          items: {
-            type: 'string',
-          },
-          type: 'array',
         },
         mySqlDb: {
           default: 'test-db',

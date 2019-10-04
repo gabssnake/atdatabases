@@ -1,12 +1,12 @@
 import {connect} from 'net';
 import spawn = require('cross-spawn');
-import run from './run';
+import run, {runExec} from './run';
 
 export const detectPort: (
   defaultPort: number,
 ) => Promise<number> = require('detect-port');
 
-export {run};
+export {run, runExec};
 
 export interface Options {
   debug: boolean;

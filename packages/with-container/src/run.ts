@@ -1,4 +1,5 @@
 import spawn = require('cross-spawn');
+import {exec, ExecException} from 'child_process';
 import {Readable} from 'stream';
 
 function buffer(stream: Readable | null, debug: 'stdout' | 'stderr' | null) {
@@ -35,13 +36,37 @@ export default async function run(
       // if we haven't already debug logged
       process.stderr.write(stderr);
       process.stdout.write(stdout);
-      const err = new Error(`${options.name} extited with code ${code}`);
-      (err as any).code = code;
-      (err as any).stdout = stdout;
-      (err as any).stderr = stderr;
-      throw err;
     }
+    const err = new Error(`${options.name} extited with code ${code}`);
+    (err as any).code = code;
+    (err as any).stdout = stdout;
+    (err as any).stderr = stderr;
+    throw err;
   }
 
   return {code, stdout, stderr};
+}
+
+export async function runExec(
+  cmd: string,
+  options: {allowFailure?: boolean; debug: boolean; name: string},
+) {
+  const [err, stdout, stderr] = await new Promise<
+    [ExecException | null, string, string]
+  >(resolve => {
+    exec(cmd, (err, stdout, stderr) => {
+      resolve([err, stdout, stderr]);
+    });
+  });
+
+  if (err && !options.allowFailure) {
+    process.stderr.write(stderr);
+    process.stdout.write(stdout);
+    throw err;
+  } else if (options.debug) {
+    process.stderr.write(stderr);
+    process.stdout.write(stdout);
+  }
+
+  return {code: err ? err.code : 0, stdout, stderr};
 }

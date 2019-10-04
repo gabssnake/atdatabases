@@ -1,6 +1,6 @@
 // @public
 
-import getDatabase, {run, Options} from '../';
+import getDatabase, {run, runExec, Options} from '../';
 import {getPgConfigSync} from '@databases/pg-config';
 
 const config = getPgConfigSync();
@@ -19,7 +19,7 @@ export default async function setup(
   const migrationsScript =
     opts.migrationsScript ||
     (process.env.PG_TEST_MIGRATIONS_SCRIPT
-      ? process.env.PG_TEST_MIGRATIONS_SCRIPT.split(' ')
+      ? process.env.PG_TEST_MIGRATIONS_SCRIPT
       : config.test.migrationsScript);
   if (process.env[envVar]) {
     console.info(`Using existing pg database from: ${envVar}`);
@@ -30,11 +30,23 @@ export default async function setup(
   process.env[envVar] = databaseURL;
   if (migrationsScript) {
     console.info('Running pg migrations');
-    await run(migrationsScript[0], migrationsScript.slice(1), {
-      debug:
-        opts.debug || (opts.debug === undefined && config.test.debug) || false,
-      name: migrationsScript.join(' '),
-    });
+    if (typeof migrationsScript === 'string') {
+      await runExec(migrationsScript, {
+        debug:
+          opts.debug ||
+          (opts.debug === undefined && config.test.debug) ||
+          false,
+        name: migrationsScript,
+      });
+    } else {
+      await run(migrationsScript[0], migrationsScript.slice(1), {
+        debug:
+          opts.debug ||
+          (opts.debug === undefined && config.test.debug) ||
+          false,
+        name: migrationsScript.join(' '),
+      });
+    }
   }
   killers.push(async () => {
     delete process.env[envVar];

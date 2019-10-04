@@ -1,7 +1,7 @@
 // @public
 
 import {getMySqlConfigSync} from '@databases/mysql-config';
-import getDatabase, {run, Options} from '../';
+import getDatabase, {run, runExec, Options} from '../';
 
 const config = getMySqlConfigSync();
 const DEFAULT_ENV_VAR =
@@ -29,12 +29,24 @@ export default async function setup(
   console.info(`Setting mysql connection string on environment: ${envVar}`);
   process.env[envVar] = databaseURL;
   if (migrationsScript) {
-    console.info('Running mysql migrations');
-    await run(migrationsScript[0], migrationsScript.slice(1), {
-      debug:
-        opts.debug || (opts.debug === undefined && config.test.debug) || false,
-      name: migrationsScript.join(' '),
-    });
+    console.info('Running pg migrations');
+    if (typeof migrationsScript === 'string') {
+      await runExec(migrationsScript, {
+        debug:
+          opts.debug ||
+          (opts.debug === undefined && config.test.debug) ||
+          false,
+        name: migrationsScript,
+      });
+    } else {
+      await run(migrationsScript[0], migrationsScript.slice(1), {
+        debug:
+          opts.debug ||
+          (opts.debug === undefined && config.test.debug) ||
+          false,
+        name: migrationsScript.join(' '),
+      });
+    }
   }
   killers.push(async () => {
     delete process.env[envVar];
